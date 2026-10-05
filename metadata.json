@@ -1,0 +1,6 @@
+{
+  "name": "NASA NeoWS Telemetry Hub",
+  "description": "Official Global Vetting Data Integration Portal for Near-Earth Object (NEO) Telemetry Dashboard — NASA International Space Apps Challenge.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
