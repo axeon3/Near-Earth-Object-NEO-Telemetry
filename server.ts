@@ -3,6 +3,8 @@ import type { Request, Response } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { GoogleGenAI } from '@google/genai';
 import { createServer as createViteServer } from 'vite';
 
@@ -14,7 +16,34 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-app.use(express.json());
+// 1. Enforce HTTP Security Headers (NASA-SA-SEC-POL-2026 / CWE-770)
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
+// 2. Enforce Payload Body Limits (Prevent ReDoS / CWE-400 Memory Exhaustion)
+app.use(express.json({ limit: '2mb' }));
+
+// 3. API Rate Limiting Setup
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests from this IP, please try again later.' },
+});
+
+app.use('/api/', apiLimiter);
+
+// 4. Input Validation & Type Guards for Numeric Telemetry (CWE-20 / CWE-1287)
+export function sanitizeNumeric(value: unknown, defaultValue: number, min = 0, max = 1e12): number {
+  const parsed = typeof value === 'number' ? value : parseFloat(String(value));
+  if (isNaN(parsed) || !isFinite(parsed)) return defaultValue;
+  return Math.min(Math.max(parsed, min), max);
+}
 
 // Initialize Google GenAI with modern @google/genai SDK
 const apiKey = process.env.GEMINI_API_KEY || '';
@@ -480,21 +509,25 @@ function computeTorinoMetrics(
   missDistanceKm: number,
   isHazardous: boolean
 ) {
-  const radius = Math.max(1, diameterM / 2);
+  const safeDiameter = sanitizeNumeric(diameterM, 100, 0.1, 100000);
+  const safeVelocity = sanitizeNumeric(velocityKms, 20, 0, 1000);
+  const safeMissKm = sanitizeNumeric(missDistanceKm, 1500000, 0, 1e9);
+
+  const radius = Math.max(1, safeDiameter / 2);
   const volume = (4 / 3) * Math.PI * Math.pow(radius, 3);
   const massKg = volume * 2500; // Average asteroid density 2500 kg/m^3
-  const vMs = velocityKms * 1000;
+  const vMs = safeVelocity * 1000;
   const energyJoules = 0.5 * massKg * Math.pow(vMs, 2);
   const kineticEnergyMt = Math.round((energyJoules / 4.184e15) * 100) / 100;
 
   let collisionProbability = 0;
-  if (missDistanceKm <= 6378) {
+  if (safeMissKm <= 6378) {
     collisionProbability = 0.999;
-  } else if (missDistanceKm < 50000) {
+  } else if (safeMissKm < 50000) {
     collisionProbability = isHazardous ? 0.05 : 0.001;
-  } else if (missDistanceKm < 384400) {
+  } else if (safeMissKm < 384400) {
     collisionProbability = isHazardous ? 0.001 : 0.00005;
-  } else if (missDistanceKm < 2000000) {
+  } else if (safeMissKm < 2000000) {
     collisionProbability = isHazardous ? 0.00001 : 1e-7;
   } else {
     collisionProbability = isHazardous ? 1e-6 : 1e-8;
@@ -736,7 +769,10 @@ app.post('/api/planetary-defense/evaluate', async (req: Request, res: Response) 
     const header = lines[0].split(',').map(h => h.replace(/^["']|["']$/g, '').trim().toLowerCase());
     const records: any[] = [];
 
-    for (let i = 1; i < lines.length; i++) {
+    // Enforce max row cap to prevent memory exhaustion (CWE-400)
+    const maxRows = Math.min(lines.length, 500);
+
+    for (let i = 1; i < maxRows; i++) {
       const line = lines[i].trim();
       if (!line) continue;
 
@@ -762,15 +798,15 @@ app.post('/api/planetary-defense/evaluate', async (req: Request, res: Response) 
         rowObj[h] = values[idx] || '';
       });
 
-      // Extract fields with fallbacks
+      // Extract fields with fallbacks & input validation (CWE-20 / CWE-1287)
       const id = rowObj['id'] || rowObj['neo_reference_id'] || `AST-${i}`;
       const name = rowObj['name'] || rowObj['designation'] || `Asteroid ${id}`;
-      const diameterM = parseFloat(rowObj['estimated_diameter_max_m'] || rowObj['diameter_max_m'] || rowObj['diameter_m'] || rowObj['max diameter (m)'] || '100') || 100;
-      const diameterMinM = parseFloat(rowObj['estimated_diameter_min_m'] || rowObj['diameter_min_m'] || '50') || 50;
-      const velocityKmh = parseFloat(rowObj['relative_velocity_kmh'] || rowObj['velocity_kmh'] || rowObj['velocity (km/h)'] || '50000') || 50000;
-      const velocityKms = parseFloat(rowObj['relative_velocity_kms'] || rowObj['velocity_kms'] || rowObj['velocity (km/s)'] || (velocityKmh / 3600).toFixed(2)) || (velocityKmh / 3600);
-      const missDistanceKm = parseFloat(rowObj['miss_distance_km'] || rowObj['miss_km'] || rowObj['miss distance (km)'] || '1500000') || 1500000;
-      const missDistanceLunar = parseFloat(rowObj['miss_distance_lunar'] || rowObj['miss_distance_lunar_ld'] || rowObj['miss (ld)'] || (missDistanceKm / 384400).toFixed(2)) || (missDistanceKm / 384400);
+      const diameterM = sanitizeNumeric(rowObj['estimated_diameter_max_m'] || rowObj['diameter_max_m'] || rowObj['diameter_m'] || rowObj['max diameter (m)'], 100, 0.1, 100000);
+      const diameterMinM = sanitizeNumeric(rowObj['estimated_diameter_min_m'] || rowObj['diameter_min_m'], 50, 0.05, 50000);
+      const velocityKmh = sanitizeNumeric(rowObj['relative_velocity_kmh'] || rowObj['velocity_kmh'] || rowObj['velocity (km/h)'], 50000, 0, 3600000);
+      const velocityKms = sanitizeNumeric(rowObj['relative_velocity_kms'] || rowObj['velocity_kms'] || rowObj['velocity (km/s)'] || (velocityKmh / 3600).toFixed(2), 20, 0, 1000);
+      const missDistanceKm = sanitizeNumeric(rowObj['miss_distance_km'] || rowObj['miss_km'] || rowObj['miss distance (km)'], 1500000, 0, 1e9);
+      const missDistanceLunar = sanitizeNumeric(rowObj['miss_distance_lunar'] || rowObj['miss_distance_lunar_ld'] || rowObj['miss (ld)'] || (missDistanceKm / 384400).toFixed(2), missDistanceKm / 384400, 0, 1e7);
       const hazardousStr = (rowObj['is_potentially_hazardous_asteroid'] || rowObj['hazardous'] || '').toLowerCase();
       const isHazardous = hazardousStr === 'true' || hazardousStr === '1' || hazardousStr === 'yes';
       const approachDate = rowObj['close_approach_date'] || rowObj['approach date'] || new Date().toISOString().split('T')[0];
@@ -937,5 +973,5 @@ if (!isProduction) {
 }
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🛸 NeoWS Telemetry Test Hub Server running on http://0.0.0.0:${PORT}`);
+  console.log(`🛸 Hardened Telemetry Server running on http://0.0.0.0:${PORT}`);
 });
