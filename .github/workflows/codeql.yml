@@ -1,4 +1,6 @@
-ame: "CodeQL Advanced"on:
+name: "CodeQL Advanced"
+
+on:
   push:
     branches: [ "main" ]
   pull_request:
@@ -20,9 +22,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # JavaScript/TypeScript explicitly skips compilation
+          # JavaScript/TypeScript has no build-mode property specified
           - language: javascript-typescript
-            build-mode: none
 
           # C# compiles dynamically via autobuild execution
           - language: csharp
@@ -37,6 +38,7 @@ jobs:
       uses: github/codeql-action/init@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
       with:
         languages: ${{ matrix.language }}
+        # Automatically resolves to 'autobuild' for C#, or remains null/ignored for JS
         build-mode: ${{ matrix.build-mode }}
 
     # Runs compilation rules dynamically ONLY when explicitly set in matrix properties
