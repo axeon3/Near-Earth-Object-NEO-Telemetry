@@ -1,4 +1,5 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
+import type { Request, Response } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
@@ -11,7 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json());
 
@@ -927,14 +928,13 @@ if (!isProduction) {
   });
   app.use(vite.middlewares);
 } else {
-app.use(limiter);
+  const distPath = path.resolve(__dirname, 'dist');
+  app.use(express.static(distPath));
+  app.get('*', (_req: Request, res: Response) => {
+    res.sendFile(path.resolve(distPath, 'index.html'));
+  });
+}
 
-app.get('/:path', function(req, res) {
-  let path = req.params.path;
-    if (isValidPath(path))
-        res.sendFile(path);
-        });
-        
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🛸 NeoWS Telemetry Test Hub Server running on http://0.0.0.0:${PORT}`);
 });

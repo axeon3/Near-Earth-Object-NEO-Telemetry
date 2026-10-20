@@ -67,7 +67,7 @@ export default function App() {
   // Save API key when changed
   useEffect(() => {
     if (apiKey) {
-      return localStorage.getItem('nasa_neows_api_key') || 'DEMO_KEY';
+      localStorage.setItem('nasa_neows_api_key', apiKey);
     }
   }, [apiKey]);
 
