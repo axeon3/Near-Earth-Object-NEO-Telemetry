@@ -9,7 +9,7 @@ Planetary NeoWS Test Hub
 
 ### 1. Mandatory Data Integration (Live NeoWS REST Feed)
 - Connects directly to the Near Earth Object Web Service (`https://api.nasa.gov/neo/rest/v1/feed`).
-- Configurable API key (default `DEMO_KEY` with localStorage persistence).
+- Configurable API key (default `DEMO_KEY`, kept in memory only).
 - Client-side 1-hour caching matching Streamlit `@st.cache_data(ttl=3600)` to optimize rate limits.
 - Graceful rate-limit detection (HTTP 429) with actionable guidance to obtain a personal key and seamless fallback to authentic planetary ephemeris data.
 

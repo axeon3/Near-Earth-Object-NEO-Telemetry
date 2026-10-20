@@ -33,9 +33,7 @@ export default function App() {
     return d.toISOString().split('T')[0];
   };
 
-  const [apiKey, setApiKey] = useState<string>(() => {
-    return localStorage.getItem('nasa_neows_api_key') || 'DEMO_KEY';
-  });
+  const [apiKey, setApiKey] = useState<string>('DEMO_KEY');
 
   const [startDate, setStartDate] = useState<string>(getTodayStr());
   const [endDate, setEndDate] = useState<string>(getTodayStr());
@@ -64,12 +62,21 @@ export default function App() {
     localStorage.setItem('nasa_unit_system', unitSystem);
   }, [unitSystem]);
 
-  // Save API key when changed
   useEffect(() => {
-    if (apiKey) {
-      localStorage.setItem('nasa_neows_api_key', apiKey);
+    try {
+      localStorage.removeItem('nasa_neows_api_key');
+      for (const key of Object.keys(localStorage)) {
+        if (
+          key.startsWith('nasa_neows_cache_') &&
+          !/^nasa_neows_cache_\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}$/.test(key)
+        ) {
+          localStorage.removeItem(key);
+        }
+      }
+    } catch {
+      // Ignore unavailable browser storage
     }
-  }, [apiKey]);
+  }, []);
 
   // Data Fetching Pipeline
   const loadTelemetry = useCallback(async (force: boolean = false) => {

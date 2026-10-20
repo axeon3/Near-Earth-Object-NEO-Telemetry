@@ -164,7 +164,7 @@ export async function fetchNasaTelemetry(
   forceRefresh: boolean = false
 ): Promise<FetchResult> {
   const cleanKey = (apiKey || 'DEMO_KEY').trim();
-  const cacheKey = `${CACHE_PREFIX}${cleanKey}_${startDate}_${endDate}`;
+  const cacheKey = `${CACHE_PREFIX}${startDate}_${endDate}`;
 
   // Check client-side session/local cache
   if (!forceRefresh) {
