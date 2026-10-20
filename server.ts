@@ -916,7 +916,24 @@ ${records.slice(0, 5).map(r => `- **${r.name} (ID: ${r.id})**: Torino ${r.torino
 });
 
 // Configure Vite middleware in development or serve static in production
-const isProduction = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+const isProduction = process.env.NODE_ENV === 'production';
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+
+if (!isProduction) {
+  const vite = await createViteServer({
+      server: {
+            middlewareMode: true,
+                  hmr: false,
+                        watch: null,
+                            },
+                                appType: 'spa',
+                                  });
+                                    app.use(vite.middlewares);
+                                    } else {
+                                      const distPath = path.resolve(__dirname, 'dist');
+                                        // ... serve static files ...
+                                        }
+                                        
   app.use(vite.middlewares);
 } else {
   const distPath = path.resolve(__dirname, 'dist');
