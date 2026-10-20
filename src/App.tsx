@@ -33,8 +33,9 @@ export default function App() {
     return d.toISOString().split('T')[0];
   };
 
-  // Telemetry API key kept in React state only (not stored in localStorage to prevent credential leakage)
-  const [apiKey, setApiKey] = useState<string>('DEMO_KEY');
+  const [apiKey, setApiKey] = useState<string>(() => {
+    return localStorage.getItem('nasa_neows_api_key') || 'DEMO_KEY';
+  });
 
   const [startDate, setStartDate] = useState<string>(getTodayStr());
   const [endDate, setEndDate] = useState<string>(getTodayStr());
@@ -63,14 +64,12 @@ export default function App() {
     localStorage.setItem('nasa_unit_system', unitSystem);
   }, [unitSystem]);
 
-  // Purge any previously stored API key from localStorage to prevent credential exposure
+  // Save API key when changed
   useEffect(() => {
-    try {
-      localStorage.removeItem('nasa_neows_api_key');
-    } catch {
-      // Ignore storage errors
+    if (apiKey) {
+      localStorage.setItem('nasa_neows_api_key', apiKey);
     }
-  }, []);
+  }, [apiKey]);
 
   // Data Fetching Pipeline
   const loadTelemetry = useCallback(async (force: boolean = false) => {
