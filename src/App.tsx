@@ -67,7 +67,10 @@ export default function App() {
   // Save API key when changed
   useEffect(() => {
     if (apiKey) {
-      localStorage.setItem('nasa_neows_api_key', apiKey);
+  const app = express();
+app.use(express.json());
+app.use(limiter); // Move limiter here
+
     }
   }, [apiKey]);
 
