@@ -2,37 +2,82 @@ name: "CodeQL Analysis"
 
 on:
   push:
-    branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
-  schedule:
-    - cron: '30 2 * * 1' # Runs every Monday at 02:30 UTC
+      branches: [ "main" ]
+        pull_request:
+            branches: [ "main" ]
+              schedule:
+                  - cron: '0 0 * * 0'
 
-jobs:
-  analyze:
-    name: Analyze
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
+                  jobs:
+                    analyze:
+                        name: Analyze
+                            runs-on: ubuntu-latest
+                                permissions:
+                                      actions: read
+                                            contents: read
+                                                  security-events: write
 
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ 'javascript-typescript', 'python' ]
+                                                      strategy:
+                                                            fail-fast: false
+                                                                  matrix:
+                                                                          language: [ 'javascript-typescript', 'python' ]
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+                                                                              steps:
+                                                                                  - name: Checkout repository
+                                                                                        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
-      with:
-        languages: ${{ matrix.language }}
-        queries: security-extended,security-and-quality
+                                                                                            - name: Initialize CodeQL
+                                                                                                  uses: github/codeql-action/init@afb54ba388a7dca6ecae48f808834bf061daa648 # v3.28.10
+                                                                                                        with:
+                                                                                                                languages: ${{ matrix.language }}
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
-      with:
-        category: "/language:${{matrix.language}}"
+                                                                                                                    - name: Perform CodeQL Analysis
+                                                                                                                          uses: github/codeql-action/analyze@afb54ba388a7dca6ecae48f808834bf061daa648 # v3.28.10
+                                                                                                                          # Security Policy
+
+                                                                                                                          ## Supported Versions
+
+                                                                                                                          Use this section to tell people about which versions of your project are currently being supported with security updates.
+
+                                                                                                                          | Version | Supported          |
+                                                                                                                          | ------- | ------------------ |
+                                                                                                                          | 5.1.x   | :white_check_mark: |
+                                                                                                                          | 5.0.x   | :x:                |
+                                                                                                                          | 4.0.x   | :white_check_mark: |
+                                                                                                                          | < 4.0   | :x:                |
+
+                                                                                                                          ## Vulnerability Reporting & Disclosure
+
+                                                                                                                          To protect our users and infrastructure, submit all security vulnerability reports through private channels prior to public disclosure.
+
+                                                                                                                          * **Reporting Channel:** Send security vulnerability reports directly via email to **axeonetwothree@gmail.com** or submit a private security advisory through GitHub Security Advisories on the repository.
+                                                                                                                          * **Response Timeline:** The security team will acknowledge receipt within 24 hours and provide an initial assessment within 72 hours.
+                                                                                                                          * **Coordinated Disclosure:** Vulnerabilities must remain confidential until a patch is released and publicly documented.
+
+                                                                                                                          ## Security Requirements & CWE Considerations
+
+                                                                                                                          All code contributions and architecture must adhere to secure coding practices targeting the prevention of top software weaknesses listed in the CWE Top 25:
+
+                                                                                                                          * **Input Validation & Sanitization (CWE-20, CWE-79, CWE-89):** All external input—including API request payloads, query parameters, and system arguments—must be strictly validated and sanitized. Direct execution or dynamic construction of queries/commands is prohibited.
+                                                                                                                          * **Authentication & Access Control (CWE-287, CWE-862, CWE-863):** Implement least-privilege authorization and explicit access checks across every endpoint and interface. Unauthenticated defaults are explicitly forbidden.
+                                                                                                                          * **Cryptographic & Secret Management (CWE-312, CWE-798):** Never hardcode API keys, secrets, or credentials in source code or commit histories. Use environment variables and secure vault configurations. Post-quantum algorithm compatibility and secure TLS standards must be maintained across external service endpoints.
+                                                                                                                          * **Memory & Resource Safety (CWE-119, CWE-400):** Implement strict resource limits, request throttling, and robust memory handling to prevent denial-of-service and buffer exhaustion vulnerabilities.
+
+                                                                                                                          ## Threat Modeling & MITRE ATT&CK Considerations
+
+                                                                                                                          To mitigate systemic risk, software components and deployment environments are designed to defend against key tactics identified in the MITRE ATT&CK Framework:
+
+                                                                                                                          * **Initial Access (T1190 - Exploit Public-Facing Application):** Maintain automated dependency scanning, dynamic image analysis, and immediate remediation of high-severity CVEs in public-facing services.
+                                                                                                                          * **Execution & Defense Evasion (T1059 - Command and Scripting Interpreter, T1562 - Impair Defenses):** Enforce strict network segmentation, restricted runtime parameters, and continuous logging. Disable unnecessary execution flags and unprivileged runtime access.
+                                                                                                                          * **Credential Access & Lateral Movement (T1552 - Unsecured Credentials, T1021 - Remote Services):** Mandate short-lived authorization tokens, strict service-to-service mutual authentication, and isolated network paths (e.g., Private Service Connect).
+                                                                                                                          * **Exfiltration & Impact (T1041 - Exfiltration Over C2, T1485 - Data Destruction):** Restrict egress traffic to authorized domains via egress rules and enforce data retention and zero-PII/zero-retention principles where applicable.
+
+                                                                                                                          ## Notice of Contribution & License Agreement
+
+                                                                                                                          By contributing code, documentation, or security patches to this project, you agree to the following terms:
+
+                                                                                                                          * **Licensing:** All contributions are submitted under the Apache License 2.0 (or the project's designated open-source license) and become part of the public codebase upon merge.
+                                                                                                                          * **Original Work:** You represent that your contribution is your original creation and that you have the full legal right to submit it under these terms.
+                                                                                                                          * **Vulnerability Fixes:** Contributions addressing security flaws should explicitly cross-reference the relevant CWE identifier in the pull request description (without disclosing unpatched zero-day vulnerabilities prior to maintainer review).
+                                                                                                                          * **Secret Scanning:** All submitted code must pass pre-commit hooks and automated secret scanning webhooks before pull requests will be accepted.
+                                                                                                                          
