@@ -927,12 +927,14 @@ if (!isProduction) {
   });
   app.use(vite.middlewares);
 } else {
-  app.use(express.static(path.resolve(__dirname, 'dist')));
-  app.get('*', (req: Request, res: Response) => {
-    res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
-  });
-}
+app.use(limiter);
 
+app.get('/:path', function(req, res) {
+  let path = req.params.path;
+    if (isValidPath(path))
+        res.sendFile(path);
+        });
+        
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🛸 NeoWS Telemetry Test Hub Server running on http://0.0.0.0:${PORT}`);
 });
