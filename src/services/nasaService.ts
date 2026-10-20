@@ -164,7 +164,8 @@ export async function fetchNasaTelemetry(
   forceRefresh: boolean = false
 ): Promise<FetchResult> {
   const cleanKey = (apiKey || 'DEMO_KEY').trim();
-  const cacheKey = `${CACHE_PREFIX}${cleanKey}_${startDate}_${endDate}`;
+  // Safe cache key without leaking secret credentials to localStorage keys
+  const cacheKey = `${CACHE_PREFIX}${startDate}_${endDate}`;
 
   // Check client-side session/local cache
   if (!forceRefresh) {
@@ -189,14 +190,30 @@ export async function fetchNasaTelemetry(
     }
   }
 
-  // NASA NeoWS REST Endpoint (Testing Portal)
-  const url = `https://api.nasa.gov/neo/rest/v1/feed?start_date=${startDate}&end_date=${endDate}&api_key=${cleanKey}`;
+  // Attempt server-side proxy route first (keeps API keys protected on the server)
+  const proxyUrl = `/api/nasa/feed?start_date=${startDate}&end_date=${endDate}`;
+  const directUrl = `https://api.nasa.gov/neo/rest/v1/feed?start_date=${startDate}&end_date=${endDate}&api_key=${cleanKey}`;
 
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-    const response = await fetch(url, { signal: controller.signal });
+    const headers: Record<string, string> = {};
+    if (cleanKey && cleanKey !== 'DEMO_KEY') {
+      headers['x-nasa-api-key'] = cleanKey;
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(proxyUrl, { headers, signal: controller.signal });
+      if (!response.ok && response.status === 404) {
+        // Fallback to direct URL if backend proxy is not mounted
+        response = await fetch(directUrl, { signal: controller.signal });
+      }
+    } catch {
+      // Fallback to direct URL on network error with proxy
+      response = await fetch(directUrl, { signal: controller.signal });
+    }
     clearTimeout(timeoutId);
 
     if (response.ok) {

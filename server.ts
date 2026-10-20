@@ -12,6 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+const isProduction = process.env.NODE_ENV === 'production';
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json());
@@ -414,10 +415,39 @@ Expected Output: A comprehensive QA mission assurance report in Markdown alongsi
   }
 });
 
+// API: Secure NASA NeoWS Proxy Endpoint (Server-Side Key Protection)
+app.get('/api/nasa/feed', async (req: Request, res: Response) => {
+  const startDate = (req.query.start_date as string) || new Date().toISOString().split('T')[0];
+  const endDate = (req.query.end_date as string) || startDate;
+  const clientKey = (req.headers['x-nasa-api-key'] as string) || (req.query.api_key as string);
+  const key = clientKey || process.env.NASA_API_KEY || 'DEMO_KEY';
+  const url = `${NASA_NEOWS_API}?start_date=${startDate}&end_date=${endDate}&api_key=${key}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      if (response.status === 429) {
+        return res.status(429).json({
+          error: "NASA API Rate Limit Reached (HTTP 429). Please configure NASA_API_KEY or provide a key from api.nasa.gov"
+        });
+      }
+      return res.status(response.status).json({
+        error: `NASA API Error: ${response.status} ${response.statusText}`
+      });
+    }
+
+    const raw = await response.json();
+    return res.json(raw);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ error: `Failed to fetch telemetry from NASA: ${msg}` });
+  }
+});
+
 // API: Live Python Execution Simulation on NASA Data
 app.post('/api/run-telemetry', async (req: Request, res: Response) => {
   const { apiKey: nasaKey } = req.body || {};
-  const key = nasaKey || 'DEMO_KEY';
+  const key = nasaKey || process.env.NASA_API_KEY || 'DEMO_KEY';
   const todayStr = new Date().toISOString().split('T')[0];
   const url = `${NASA_NEOWS_API}?start_date=${todayStr}&end_date=${todayStr}&api_key=${key}`;
 
@@ -916,8 +946,6 @@ ${records.slice(0, 5).map(r => `- **${r.name} (ID: ${r.id})**: Torino ${r.torino
 });
 
 // Configure Vite middleware in development or serve static in production
-const isProduction = process.env.NODE_ENV === 'production';
-
 if (!isProduction) {
   const vite = await createViteServer({
     server: { 
