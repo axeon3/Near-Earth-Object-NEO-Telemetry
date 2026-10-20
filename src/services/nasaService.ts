@@ -189,7 +189,7 @@ export async function fetchNasaTelemetry(
     }
   }
 
-  // NASA NeoWS Official REST Endpoint
+  // NASA NeoWS REST Endpoint (Testing Portal)
   const url = `https://api.nasa.gov/neo/rest/v1/feed?start_date=${startDate}&end_date=${endDate}&api_key=${cleanKey}`;
 
   try {

@@ -161,12 +161,12 @@ export const MultiAgentCrew: React.FC<MultiAgentCrewProps> = ({ apiKey }) => {
               {isRunning ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                  <span>Pipeline Running Sequence...</span>
+                  <span>Running Multi-Agent Crew Pipeline...</span>
                 </>
               ) : (
                 <>
                   <Play className="w-4 h-4 fill-white text-white" />
-                  <span>Kickoff Multi-Agent Pipeline</span>
+                  <span>Kickoff Multi-Agent Crew Pipeline</span>
                 </>
               )}
             </button>

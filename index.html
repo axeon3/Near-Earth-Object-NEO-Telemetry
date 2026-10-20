@@ -3,15 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Planetary NeoWS Telemetry Hub</title>
-    <meta name="description" content="Official Global Vetting Data Integration Portal for Near-Earth Object (NEO) Telemetry Dashboard — International Space Apps Challenge." />
-    <meta property="og:title" content="Planetary NeoWS Telemetry Hub" />
-    <meta property="og:description" content="Official Global Vetting Data Integration Portal for Near-Earth Object (NEO) Telemetry Dashboard — International Space Apps Challenge." />
+    <title>NeoWS Telemetry Test Hub</title>
+    <meta name="description" content="Testing Portal for Near-Earth Object (NEO) Telemetry Dashboard." />
+    <meta property="og:title" content="NeoWS Telemetry Test Hub" />
+    <meta property="og:description" content="Testing Portal for Near-Earth Object (NEO) Telemetry Dashboard." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      // Gracefully silence harmless HMR/WebSocket transport rejections in AI Studio preview iframe
+      window.addEventListener('unhandledrejection', function(event) {
+        var reason = event && (event.reason ? (event.reason.message || String(event.reason)) : '');
+        if (
+          reason.indexOf('WebSocket') !== -1 ||
+          reason.indexOf('vite:ws') !== -1 ||
+          reason.indexOf('createWebSocketModuleRunnerTransport') !== -1
+        ) {
+          event.preventDefault();
+          if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+        }
+      });
+      window.addEventListener('error', function(event) {
+        var msg = (event && event.message) || '';
+        var filename = (event && event.filename) || '';
+        if (
+          msg.indexOf('WebSocket') !== -1 ||
+          filename.indexOf('@vite/client') !== -1 ||
+          msg.indexOf('createWebSocketModuleRunnerTransport') !== -1
+        ) {
+          event.preventDefault();
+          if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+        }
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>

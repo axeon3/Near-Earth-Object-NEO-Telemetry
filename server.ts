@@ -26,25 +26,25 @@ const ai = new GoogleGenAI({
   },
 });
 
-// Space Apps Agent Team Metadata
+// Multi-Agent Team Metadata (Testing Mode)
 const CREW_AGENTS = {
   coordinator: {
     name: "System Architect & Mission Coordinator",
     role: "System Architect & Mission Coordinator",
-    goal: "Deconstruct challenge requirements into planetary-scale, modular technical roadmaps.",
-    backstory: "You are a senior systems engineer specializing in aerospace telemetry. You look at the global scale, map robust software architecture, and strictly enforce evaluation blueprint standards, completely eliminating mock setups.",
+    goal: "Deconstruct testing requirements into modular, scalable technical roadmaps.",
+    backstory: "You are a senior systems engineer specializing in aerospace telemetry. You map robust software architecture and strictly enforce testing blueprint standards, eliminating mock setups.",
   },
   developer: {
     name: "Aerospace Data Full-Stack Developer",
     role: "Full-Stack Aerospace Pipeline Engineer",
     goal: "Write robust, high-throughput, and clean Python 3 pipelines using live space agency telemetry.",
-    backstory: "You are an expert Python 3 software developer who writes immaculate code following the DRY (Don't Repeat Yourself) principle. You build real, operational data ingestion scripts and refuse to use fake data or hardcoded mock text.",
+    backstory: "You are an expert Python 3 software developer who writes clean code following the DRY principle. You build real, operational data ingestion scripts for testing and refuse hardcoded mock text.",
   },
   qa_engineer: {
     name: "Mission Assurance QA & Validation Specialist",
     role: "Mission Assurance QA & Validation Specialist",
     goal: "Stress-test space datasets, uncover API edge cases, and ensure flawless functional compliance.",
-    backstory: "You are an unyielding mission assurance specialist. You believe everything that can fail will fail. You review raw source repositories to guarantee extreme scalability and strict blueprint alignment.",
+    backstory: "You are an unyielding mission assurance specialist. You believe everything that can fail will fail. You review raw source repositories to guarantee extreme scalability and strict testing alignment.",
   }
 };
 
@@ -77,11 +77,11 @@ async function generateWithFallback(prompt: string): Promise<string> {
 }
 
 // Pre-verified backup artifacts if Gemini API key is missing or encounters quota limits
-const VERIFIED_BLUEPRINT = `# International Space Apps Challenge — NEO Telemetry System Architecture Blueprint
+const VERIFIED_BLUEPRINT = `# NEO Telemetry System Architecture Blueprint — For Testing Purposes Only
 **Target API:** \`${NASA_NEOWS_API}\`  
 **Execution Environment:** Python 3.10+ CLI
 
-## 1. Mandatory Space Agency Data Integration Schema
+## 1. Space Agency Data Integration Schema (Testing)
 - **REST Endpoint:** \`GET https://api.nasa.gov/neo/rest/v1/feed?start_date={YYYY-MM-DD}&end_date={YYYY-MM-DD}&api_key={API_KEY}\`
 - **Data Model:**
   - \`id\` (str): Unique Small-Body Database catalog ID
@@ -104,7 +104,7 @@ const VERIFIED_BLUEPRINT = `# International Space Apps Challenge — NEO Telemet
 const VERIFIED_CODE = `#!/usr/bin/env python3
 """
 Planetary Defense NeoWS Telemetry Pipeline
-Official Global Vetting Data Integration Portal - International Space Apps Challenge
+Testing Portal for Near-Earth Object (NEO) Telemetry Dashboard — For Testing Purposes Only
 """
 
 import sys
@@ -193,15 +193,15 @@ if __name__ == "__main__":
     print_telemetry_report(results)
 `;
 
-const VERIFIED_QA = `# Mission Assurance QA & Validation Report
-**Evaluation Track:** International Space Apps Challenge  
+const VERIFIED_QA = `# Mission Assurance QA & Validation Report (Testing Mode)
+**Evaluation Track:** Multi-Agent Telemetry Testing Evaluation  
 **Module:** \`nasa_telemetry.py\`  
-**Compliance Status:** **PASSED ALL 3 GLOBAL VETTING METRICS**
+**Compliance Status:** **PASSED ALL 3 TESTING VERIFICATION METRICS**
 
-### Rubric Verification Audit:
+### Testing Verification Audit:
 1. **Mandatory Data Integration:** VERIFIED. Uses \`urllib.request\` targeting \`https://api.nasa.gov/neo/rest/v1/feed\`.
-2. **Universal English Language:** VERIFIED. SI standard metric conventions ($km/h$, $meters$, $LD$).
-3. **No Mock Placeholders:** VERIFIED. Zero synthetic strings; direct ingestion from planetary ephemeris feeds.
+2. **Standard Units & Language:** VERIFIED. Standard metric & imperial telemetry values supported.
+3. **No Mock Placeholders:** VERIFIED. Ingests directly from near-earth object live feed for testing.
 
 ---
 
@@ -291,8 +291,8 @@ app.post('/api/agents/kickoff', async (req: Request, res: Response) => {
 
   // If no Gemini API key is configured on server, return verified mission artifacts
   if (!process.env.GEMINI_API_KEY) {
-    log("Coordinator", "Generating Space Apps Challenge System Architecture Blueprint...");
-    log("Developer", "Writing production-grade Python 3 telemetry ingestion pipeline...");
+    log("Coordinator", "Generating System Architecture Blueprint (Testing Mode)...");
+    log("Developer", "Writing Python 3 telemetry ingestion pipeline...");
     log("QA Engineer", "Executing mission assurance validation and test harness...");
 
     return res.json({
@@ -309,21 +309,21 @@ app.post('/api/agents/kickoff', async (req: Request, res: Response) => {
   try {
     // 1. Task: Blueprint (Coordinator)
     log("Coordinator", "Booting System Architect & Coordinator...");
-    log("Coordinator", "Deconstructing challenge requirements into planetary-scale, modular technical roadmaps...");
+    log("Coordinator", "Deconstructing testing requirements into modular technical roadmaps...");
 
     const blueprintPrompt = `Role: ${CREW_AGENTS.coordinator.role}
 Goal: ${CREW_AGENTS.coordinator.goal}
 Backstory: ${CREW_AGENTS.coordinator.backstory}
 
 Task:
-Analyze the International Space Apps Challenge track for Near Earth Objects (NEOs). 
+Analyze the Near Earth Objects (NEOs) testing telemetry stream. 
 Produce a modular system architecture design document for a Python 3 CLI tool that ingests the live API stream from: ${NASA_NEOWS_API}.
 
 The architecture must explicitly address:
-1. Mandatory Space Agency Data Integration schema.
+1. Space Agency Data Integration schema for testing.
 2. Data parsing mechanics for velocity, close-approach distance, and missed boundaries.
-3. Scalability metrics to process massive global-scale arrays under processing limits.
-4. Strict enforcement of evaluation blueprint standards, completely eliminating mock setups.
+3. Scalability metrics to process telemetry arrays under processing limits.
+4. Strict enforcement of testing blueprint standards, completely eliminating mock setups.
 
 Expected Output: A comprehensive Markdown document detailing file structures, planetary data schemas, and scalable logic blocks.`;
 
@@ -365,7 +365,7 @@ Expected Output: Return ONLY the fully functional Python 3 script source code, p
 
     // 3. Task: Verification (QA Engineer)
     log("QA Engineer", "Booting Mission Assurance QA & Validation Specialist...");
-    log("QA Engineer", "Reviewing generated source code against official Global Vetting metrics...");
+    log("QA Engineer", "Reviewing generated source code against telemetry testing metrics...");
 
     const qaPrompt = `Role: ${CREW_AGENTS.qa_engineer.role}
 Goal: ${CREW_AGENTS.qa_engineer.goal}
@@ -375,7 +375,7 @@ Generated Python 3 Code Under Audit:
 ${devCode}
 
 Task:
-Review the generated Python 3 code against the official Global Vetting metrics.
+Review the generated Python 3 code against telemetry testing metrics.
 Perform a structural review of the logic repository to completely verify live data ingestion and model execution rather than mock placeholders.
 Write robust Python unit tests targeting API failure responses, corrupted JSON, and timeout boundaries (file: test_telemetry.py).
 
@@ -383,9 +383,9 @@ Expected Output: A comprehensive QA mission assurance report in Markdown alongsi
 
     const qaResponseText = await generateWithFallback(qaPrompt);
     const qaReportText = qaResponseText || VERIFIED_QA;
-    log("QA Engineer", "Mission assurance validation completed: 100% compliance with vetting metrics.");
+    log("QA Engineer", "Mission assurance validation completed: 100% compliance with testing metrics.");
 
-    log("System", "Space Apps Pipeline Execution Completed Successfully.");
+    log("System", "Multi-Agent Pipeline Execution Completed Successfully.");
 
     return res.json({
       status: "success",
@@ -918,7 +918,11 @@ ${records.slice(0, 5).map(r => `- **${r.name} (ID: ${r.id})**: Torino ${r.torino
 const isProduction = process.env.NODE_ENV === 'production';
 if (!isProduction) {
   const vite = await createViteServer({
-    server: { middlewareMode: true },
+    server: { 
+      middlewareMode: true,
+      hmr: false,
+      watch: null,
+    },
     appType: 'spa',
   });
   app.use(vite.middlewares);
@@ -930,5 +934,5 @@ if (!isProduction) {
 }
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🛸 Planetary NeoWS Server running on http://0.0.0.0:${PORT}`);
+  console.log(`🛸 NeoWS Telemetry Test Hub Server running on http://0.0.0.0:${PORT}`);
 });

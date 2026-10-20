@@ -13,7 +13,7 @@ import { MultiAgentCrew } from './components/MultiAgentCrew';
 import { ObjectDetailModal } from './components/ObjectDetailModal';
 import { PDCOTorinoPipeline } from './components/PDCOTorinoPipeline';
 import { fetchNasaTelemetry, computeSummaryMetrics } from './services/nasaService';
-import { TelemetryObject } from './types/nasa';
+import { TelemetryObject, UnitSystem } from './types/nasa';
 import { 
   Rocket, 
   AlertCircle, 
@@ -50,11 +50,19 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<'velocity' | 'diameter' | 'missDistance' | 'date'>('velocity');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => {
+    return (localStorage.getItem('nasa_unit_system') as UnitSystem) || 'metric';
+  });
 
   // UI Navigation
   const [activeTab, setActiveTab] = useState<'table' | 'matrix' | 'radar' | 'crew' | 'pdco'>('table');
   const [selectedNeo, setSelectedNeo] = useState<TelemetryObject | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+
+  // Save unit system
+  useEffect(() => {
+    localStorage.setItem('nasa_unit_system', unitSystem);
+  }, [unitSystem]);
 
   // Save API key when changed
   useEffect(() => {
@@ -156,6 +164,8 @@ export default function App() {
         isCollapsed={isSidebarCollapsed}
         setIsCollapsed={setIsSidebarCollapsed}
         filteredCount={filteredData.length}
+        unitSystem={unitSystem}
+        setUnitSystem={setUnitSystem}
       />
 
       {/* Main Content Area */}
@@ -179,16 +189,48 @@ export default function App() {
                   <span>Near-Earth Object (NEO) Telemetry Dashboard</span>
                 </h1>
               </div>
-              <p className="text-xs text-cyan-300/80 mt-1 flex items-center gap-2 font-mono">
-                <span>Official Global Vetting Data Integration Portal — International Space Apps Challenge</span>
+              <p className="text-xs text-amber-300/90 mt-1 flex items-center gap-2 font-mono">
+                <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] uppercase font-bold tracking-wider">
+                  Testing Mode
+                </span>
+                <span>Testing Portal for Near-Earth Object (NEO) Telemetry — For Testing Purposes Only</span>
               </p>
             </div>
 
-            {/* Source Status */}
+            {/* Top Bar Controls & Status */}
             <div className="flex items-center gap-3">
+              {/* Unit System Switcher */}
+              <div className="flex items-center bg-[#040916] border border-cyan-900/50 rounded-lg p-0.5 text-xs font-mono">
+                <button
+                  type="button"
+                  onClick={() => setUnitSystem('metric')}
+                  className={`px-2.5 py-1 rounded transition-all flex items-center gap-1 ${
+                    unitSystem === 'metric'
+                      ? 'bg-cyan-600/40 text-cyan-200 border border-cyan-500/40 font-bold'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                  title="Switch to Metric Units (km, m, km/h)"
+                >
+                  <span>📏</span> Metric
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUnitSystem('imperial')}
+                  className={`px-2.5 py-1 rounded transition-all flex items-center gap-1 ${
+                    unitSystem === 'imperial'
+                      ? 'bg-cyan-600/40 text-cyan-200 border border-cyan-500/40 font-bold'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                  title="Switch to Imperial Units (mi, ft, mph)"
+                >
+                  <span>📐</span> Imperial
+                </button>
+              </div>
+
+              {/* Source Status */}
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#040916] border border-cyan-900/50 text-xs font-mono">
                 <span className={`w-2 h-2 rounded-full ${isLoading ? 'bg-amber-400 animate-ping' : isFallback ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
-                <span className="text-slate-300 truncate max-w-[280px]">{sourceLabel}</span>
+                <span className="text-slate-300 truncate max-w-[240px]">{sourceLabel}</span>
               </div>
             </div>
           </div>
@@ -220,11 +262,12 @@ export default function App() {
             </div>
           )}
 
-          {/* Presentation Layer: Core Focus & Clarity (Local Hub Rubric Section 2) */}
+          {/* Presentation Layer: Core Focus & Clarity */}
           <TopMetrics
             summary={summary}
             sourceLabel={sourceLabel}
             isFallback={isFallback}
+            unitSystem={unitSystem}
           />
 
           {/* Visualization Mode Tabs */}
@@ -314,6 +357,7 @@ export default function App() {
                 hazardousOnly={hazardousOnly}
                 setHazardousOnly={setHazardousOnly}
                 onOpenPdcoPipeline={() => setActiveTab('pdco')}
+                unitSystem={unitSystem}
               />
             )}
 
