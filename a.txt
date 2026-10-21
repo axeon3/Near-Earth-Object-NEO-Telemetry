@@ -1,0 +1,132 @@
+using System;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Nasa.MissionControl.RootAuditor;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Configure strict CORS policies for Front-end Engine Dashboard access
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
+var app = builder.Build();
+app.UseCors();
+
+// Dependency Injection or direct instantiation of your Auditor Engine
+var auditor = new RootRepoSecurityManager();
+
+/**
+ * REST Endpoint mapping URL path strings into the Auditor Engine
+ */
+app.MapPost("/api/audit", async (HttpContext context) =>
+{
+    try
+    {
+        using var document = await JsonDocument.ParseAsync(context.Request.Body);
+        if (!document.RootElement.TryGetProperty("targetPath", out var pathProperty) || 
+            string.IsNullOrWhiteSpace(pathProperty.GetString()))
+        {
+            return Results.BadRequest(new { success = false, error = "Missing target path payload." });
+        }
+
+        string candidatePath = pathProperty.GetString()!;
+        
+        // Execute your native NASA Security Audit Engine
+        RootRepositoryManifest manifest = auditor.AnalyzeRepositoryRoot(candidatePath);
+        
+        return Results.Ok(new { success = true, data = manifest });
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.Json(new { success = false, error = $"Validation Failure: {ex.Message}" }, statusCode: 400);
+    }
+    catch (DirectoryNotFoundException ex)
+    {
+        return Results.Json(new { success = false, error = $"Inaccessible Workspace: {ex.Message}" }, statusCode: 404);
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { success = false, error = $"Internal System Fault: {ex.Message}" }, statusCode: 500);
+    }
+});
+
+app.Run();
+
+namespace Nasa.MissionControl.RootAuditor
+{
+    public record RootRepositoryManifest(
+        [property: JsonPropertyName("repository_root_path")] string RootPath,
+        [property: JsonPropertyName("generation_timestamp")] DateTime Timestamp,
+        [property: JsonPropertyName("git_hooks_valid")] bool GitHooksValid,
+        [property: JsonPropertyName("untracked_binaries_discovered")] int UntrackedBinaries,
+        [property: JsonPropertyName("integrity_hash")] string IntegrityHash
+    );
+
+    public sealed class RootRepoSecurityManager
+    {
+        private const int MaxPathLengthChars = 260;
+
+        public RootRepositoryManifest AnalyzeRepositoryRoot(string candidatePath)
+        {
+            if (string.IsNullOrWhiteSpace(candidatePath) || candidatePath.Length > MaxPathLengthChars)
+            {
+                throw new ArgumentException("Invalid, unvalidated, or unsafe path string length provided.");
+            }
+
+            string fullyQualifiedRoot = Path.GetFullPath(candidatePath);
+
+            if (!Directory.Exists(fullyQualifiedRoot))
+            {
+                throw new DirectoryNotFoundException("Target root repository directory is missing.");
+            }
+
+            int unverifiedBinaryPayloadCount = 0;
+            string[] binaryExtensions = { ".exe", ".dll", ".so", ".bin", ".o" };
+
+            var files = Directory.EnumerateFiles(fullyQualifiedRoot, "*.*", SearchOption.AllDirectories);
+            
+            foreach (var file in files)
+            {
+                string extension = Path.GetExtension(file).ToLowerInvariant();
+                if (Array.Exists(binaryExtensions, ext => ext == extension))
+                {
+                    unverifiedBinaryPayloadCount++;
+                }
+            }
+
+            bool gitHooksActive = Directory.Exists(Path.Combine(fullyQualifiedRoot, ".git", "hooks"));
+            string repositoryFingerprint = GenerateRepositoryFingerprint(fullyQualifiedRoot);
+
+            return new RootRepositoryManifest(
+                RootPath: fullyQualifiedRoot,
+                Timestamp: DateTime.UtcNow,
+                GitHooksValid: gitHooksActive,
+                UntrackedBinaries: unverifiedBinaryPayloadCount,
+                IntegrityHash: repositoryFingerprint
+            );
+        }
+
+        private static string GenerateRepositoryFingerprint(string rootPath)
+        {
+            using (var sha256 = SHA256.Create())
+            {
+                byte[] sourceBytes = System.Text.Encoding.UTF8.GetBytes(rootPath);
+                byte[] computedHash = sha256.ComputeHash(sourceBytes);
+                return Convert.ToHexString(computedHash);
+            }
+        }
+    }
+}
