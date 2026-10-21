@@ -793,30 +793,52 @@ app.post('/api/planetary-defense/evaluate', async (req: Request, res: Response) 
       }
       values.push(currentVal.trim().replace(/^["']|["']$/g, ''));
 
-      // Create a dictionary with no prototype to block prototype pollution attacks
-      const rowObj: Record<string, string> = Object.create(null);
+      // Create a null-prototype object to prevent prototype chain contamination
+const rowObj: Record<string, string> = Object.create(null);
 
-      header.forEach((h, idx) => {
-        // Sanitize key name to prevent property injection
-        const safeKey = String(h).trim();
-        if (
-          safeKey !== '__proto__' && 
-          safeKey !== 'constructor' && 
-          safeKey !== 'prototype'
-        ) {
-          rowObj[safeKey] = values[idx] || '';
-        }
-      });
+header.forEach((h, idx) => {
+  // Normalize header key (trim and lowercase for resilient matching)
+  const safeKey = String(h).trim().toLowerCase();
+  
+  if (
+    safeKey &&
+    safeKey !== '__proto__' && 
+    safeKey !== 'constructor' && 
+    safeKey !== 'prototype'
+  ) {
+    rowObj[safeKey] = (values[idx] ?? '').trim();
+  }
+});
 
-      // Helper for safe property access
-      const getRowVal = (...keys: string[]): string => {
-        for (const key of keys) {
-          if (Object.prototype.hasOwnProperty.call(rowObj, key) && rowObj[key] !== undefined) {
-            return rowObj[key];
-          }
-        }
-        return '';
-      };
+// Helper: returns the first matching key that has a non-empty value
+const getRowValue = (...keys: string[]): string => {
+  for (const rawKey of keys) {
+    const key = rawKey.trim().toLowerCase();
+    if (Object.prototype.hasOwnProperty.call(rowObj, key)) {
+      const val = rowObj[key];
+      if (val !== '') {
+        return val;
+      }
+    }
+  }
+  return '';
+};
+
+// Extract fields safely using the helper
+const id = getRowValue('id', 'neo_reference_id') || `AST-${i}`;
+const name = getRowValue('name', 'designation') || `Asteroid ${id}`;
+const diameterM = sanitizeNumeric(
+  getRowValue('estimated_diameter_max_m', 'diameter_max_m', 'diameter_m', 'max diameter (m)'), 
+  100, 0.1, 100000
+);
+const diameterMinM = sanitizeNumeric(
+  getRowValue('estimated_diameter_min_m', 'diameter_min_m'), 
+  50, 0.05, 50000
+);
+const velocityKmh = sanitizeNumeric(
+  getRowValue('relative_velocity_kmh', 'velocity_kmh', 'velocity (km/h)'), 
+  50000, 0, 3600000
+);
 
       // Extract fields with fallbacks & input validation (CWE-20 / CWE-1287)
       const id = getRowVal('id', 'neo_reference_id') || `AST-${i}`;
