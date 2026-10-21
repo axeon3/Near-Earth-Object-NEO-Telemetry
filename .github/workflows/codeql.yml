@@ -22,12 +22,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # JavaScript/TypeScript has no build-mode property specified
           - language: javascript-typescript
-
-          # JavaScript/TypeScript compiles dynamically via autobuild execution
-          - language: JavaScript-TypeScript 
-            build-mode: autobuild
+            build-mode: none
 
     steps:
     - name: Checkout repository

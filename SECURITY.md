@@ -64,3 +64,4 @@ Before submitting pull requests or merging changes to flight or ground releases,
 ```bash
 chmod +x nasa_pipeline_runner.sh
 ./nasa_pipeline_runner.sh
+```
