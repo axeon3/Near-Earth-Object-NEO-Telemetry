@@ -25,8 +25,8 @@ jobs:
           # JavaScript/TypeScript has no build-mode property specified
           - language: javascript-typescript
 
-          # C# compiles dynamically via autobuild execution
-          - language: csharp
+          # JavaScript/TypeScript compiles dynamically via autobuild execution
+          - language: JavaScript-TypeScript 
             build-mode: autobuild
 
     steps:
