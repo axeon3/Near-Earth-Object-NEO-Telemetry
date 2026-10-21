@@ -798,17 +798,21 @@ const rowObj: Record<string, string> = Object.create(null);
 
 header.forEach((h, idx) => {
   // Normalize header key (trim and lowercase for resilient matching)
-  const safeKey = String(h).trim().toLowerCase();
-  
-  if (
-    safeKey &&
-    safeKey !== '__proto__' && 
-    safeKey !== 'constructor' && 
-    safeKey !== 'prototype'
-  ) {
-    rowObj[safeKey] = (values[idx] ?? '').trim();
-  }
-});
+  const rowMap = new Map<string, string>();
+
+  headers.forEach((header, idx) => {
+    const safeKey = header.trim();
+      if (
+          safeKey &&
+              safeKey !== '__proto__' &&
+                  safeKey !== 'constructor' && 
+                      safeKey !== 'prototype'
+                        ) {
+                            rowMap.set(safeKey, (values[idx] ?? '').trim());
+                              }
+                              });
+
+                              const rowObj: Record<string, string> = Object.fromEntries(rowMap);
 
 // Helper: returns the first matching key that has a non-empty value
 const getRowValue = (...keys: string[]): string => {
