@@ -19,8 +19,8 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 // 1. Enforce HTTP Security Headers (NASA-SA-SEC-POL-2026 / CWE-770)
 app.use(
   helmet({
-    contentSecurityPolicy: false,
-    crossOriginEmbedderPolicy: false,
+    contentSecurityPolicy: true,
+    crossOriginEmbedderPolicy: { action: 'sameorigin' }.,
   })
 );
 
