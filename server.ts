@@ -793,23 +793,73 @@ app.post('/api/planetary-defense/evaluate', async (req: Request, res: Response) 
       }
       values.push(currentVal.trim().replace(/^["']|["']$/g, ''));
 
-      const rowObj: Record<string, string> = {};
+      // Create a dictionary with no prototype to block prototype pollution attacks
+      const rowObj: Record<string, string> = Object.create(null);
+
       header.forEach((h, idx) => {
-        rowObj[h] = values[idx] || '';
+        // Sanitize key name to prevent property injection
+        const safeKey = String(h).trim();
+        if (
+          safeKey !== '__proto__' && 
+          safeKey !== 'constructor' && 
+          safeKey !== 'prototype'
+        ) {
+          rowObj[safeKey] = values[idx] || '';
+        }
       });
 
+      // Helper for safe property access
+      const getRowVal = (...keys: string[]): string => {
+        for (const key of keys) {
+          if (Object.prototype.hasOwnProperty.call(rowObj, key) && rowObj[key] !== undefined) {
+            return rowObj[key];
+          }
+        }
+        return '';
+      };
+
       // Extract fields with fallbacks & input validation (CWE-20 / CWE-1287)
-      const id = rowObj['id'] || rowObj['neo_reference_id'] || `AST-${i}`;
-      const name = rowObj['name'] || rowObj['designation'] || `Asteroid ${id}`;
-      const diameterM = sanitizeNumeric(rowObj['estimated_diameter_max_m'] || rowObj['diameter_max_m'] || rowObj['diameter_m'] || rowObj['max diameter (m)'], 100, 0.1, 100000);
-      const diameterMinM = sanitizeNumeric(rowObj['estimated_diameter_min_m'] || rowObj['diameter_min_m'], 50, 0.05, 50000);
-      const velocityKmh = sanitizeNumeric(rowObj['relative_velocity_kmh'] || rowObj['velocity_kmh'] || rowObj['velocity (km/h)'], 50000, 0, 3600000);
-      const velocityKms = sanitizeNumeric(rowObj['relative_velocity_kms'] || rowObj['velocity_kms'] || rowObj['velocity (km/s)'] || (velocityKmh / 3600).toFixed(2), 20, 0, 1000);
-      const missDistanceKm = sanitizeNumeric(rowObj['miss_distance_km'] || rowObj['miss_km'] || rowObj['miss distance (km)'], 1500000, 0, 1e9);
-      const missDistanceLunar = sanitizeNumeric(rowObj['miss_distance_lunar'] || rowObj['miss_distance_lunar_ld'] || rowObj['miss (ld)'] || (missDistanceKm / 384400).toFixed(2), missDistanceKm / 384400, 0, 1e7);
-      const hazardousStr = (rowObj['is_potentially_hazardous_asteroid'] || rowObj['hazardous'] || '').toLowerCase();
+      const id = getRowVal('id', 'neo_reference_id') || `AST-${i}`;
+      const name = getRowVal('name', 'designation') || `Asteroid ${id}`;
+      const diameterM = sanitizeNumeric(
+        getRowVal('estimated_diameter_max_m', 'diameter_max_m', 'diameter_m', 'max diameter (m)'),
+        100,
+        0.1,
+        100000
+      );
+      const diameterMinM = sanitizeNumeric(
+        getRowVal('estimated_diameter_min_m', 'diameter_min_m'),
+        50,
+        0.05,
+        50000
+      );
+      const velocityKmh = sanitizeNumeric(
+        getRowVal('relative_velocity_kmh', 'velocity_kmh', 'velocity (km/h)'),
+        50000,
+        0,
+        3600000
+      );
+      const velocityKms = sanitizeNumeric(
+        getRowVal('relative_velocity_kms', 'velocity_kms', 'velocity (km/s)') || (velocityKmh / 3600).toFixed(2),
+        20,
+        0,
+        1000
+      );
+      const missDistanceKm = sanitizeNumeric(
+        getRowVal('miss_distance_km', 'miss_km', 'miss distance (km)'),
+        1500000,
+        0,
+        1e9
+      );
+      const missDistanceLunar = sanitizeNumeric(
+        getRowVal('miss_distance_lunar', 'miss_distance_lunar_ld', 'miss (ld)') || (missDistanceKm / 384400).toFixed(2),
+        missDistanceKm / 384400,
+        0,
+        1e7
+      );
+      const hazardousStr = (getRowVal('is_potentially_hazardous_asteroid', 'hazardous')).toLowerCase();
       const isHazardous = hazardousStr === 'true' || hazardousStr === '1' || hazardousStr === 'yes';
-      const approachDate = rowObj['close_approach_date'] || rowObj['approach date'] || new Date().toISOString().split('T')[0];
+      const approachDate = getRowVal('close_approach_date', 'approach date') || new Date().toISOString().split('T')[0];
 
       const metrics = computeTorinoMetrics(diameterM, velocityKms, missDistanceKm, isHazardous);
 
