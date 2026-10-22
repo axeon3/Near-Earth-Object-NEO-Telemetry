@@ -19,8 +19,19 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 // 1. Enforce HTTP Security Headers (NASA-SA-SEC-POL-2026 / CWE-770)
 app.use(
   helmet({
-    contentSecurityPolicy: true,
-    crossOriginEmbedderPolicy: { action: 'sameorigin' }.,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+        imgSrc: ["'self'", "data:", "blob:", "https:"],
+        connectSrc: ["'self'", "https:", "wss:", "ws:"],
+        frameAncestors: ["*"],
+      },
+    },
+    frameguard: false,
+    crossOriginEmbedderPolicy: false,
   })
 );
 
@@ -794,25 +805,20 @@ app.post('/api/planetary-defense/evaluate', async (req: Request, res: Response) 
       values.push(currentVal.trim().replace(/^["']|["']$/g, ''));
 
       // Create a null-prototype object to prevent prototype chain contamination
-const rowObj: Record<string, string> = Object.create(null);
+      const rowObj: Record<string, string> = Object.create(null);
 
-header.forEach((h, idx) => {
-  // Normalize header key (trim and lowercase for resilient matching)
-  const rowMap = new Map<string, string>();
-
-  headers.forEach((header, idx) => {
-    const safeKey = header.trim();
-      if (
+      header.forEach((h, idx) => {
+        // Normalize header key (trim and lowercase for resilient matching)
+        const safeKey = String(h).trim().toLowerCase();
+        if (
           safeKey &&
-              safeKey !== '__proto__' &&
-                  safeKey !== 'constructor' && 
-                      safeKey !== 'prototype'
-                        ) {
-                            rowMap.set(safeKey, (values[idx] ?? '').trim());
-                              }
-                              });
-
-                              const rowObj: Record<string, string> = Object.fromEntries(rowMap);
+          safeKey !== '__proto__' && 
+          safeKey !== 'constructor' && 
+          safeKey !== 'prototype'
+        ) {
+          rowObj[safeKey] = (values[idx] ?? '').trim();
+        }
+      });
 
 // Helper: returns the first matching key that has a non-empty value
 const getRowValue = (...keys: string[]): string => {
