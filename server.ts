@@ -17,6 +17,7 @@ const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 // 1. Enforce HTTP Security Headers (NASA-SA-SEC-POL-2026 / CWE-770)
+// Enables frameguard, CSP, and security headers while permitting preview iframe rendering
 app.use(
   helmet({
     contentSecurityPolicy: {

@@ -1,63 +1,53 @@
-name: "CodeQL Telemetry Hardening & Security Analysis"
+name: "CodeQL Advanced"
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  schedule:
-    # Run every Sunday at 04:00 UTC to catch newly disclosed vulnerabilities (CVEs)
-    - cron: '0 4 * * *'
-
-# Ensure only one CodeQL run per branch/PR at a time to optimize runner resources
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-permissions:
-  # Explicit least-privilege scoping
-  contents: read
-  security-events: write
-  actions: read
-
-jobs:
-  analyze:
-    name: Analyze (${{ matrix.language }})
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - language: javascript-typescript
-            build-mode: none
-          - language: python
-            build-mode: none
-          - language: actions
-            build-mode: { actions : autobuild }
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      # Initializes the CodeQL tools and sets query suite
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
-          # 'security-and-quality' activates deep hardening checks, precision arithmetic checks,
-          # and security vulnerability rules beyond basic security queries
-          queries: security-and-quality
-
-      # Autobuild attempts to build any compiled languages if needed
-      - name: Perform Autobuild
-        uses: github/codeql-action/autobuild@v3
-
-      # Executes the CodeQL AST and data-flow analysis
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:${{ matrix.language }}"
-          upload: true
+      branches: [ "main" ]
+        pull_request:
+            branches: [ "main" ]
+              schedule:
+                  - cron: '20 10 * * 2'
+                  
+                  jobs:
+                    analyze:
+                        name: Analyze (${{ matrix.language }})
+                            runs-on: ubuntu-latest
+                                permissions:
+                                      security-events: write
+                                            packages: read
+                                                  actions: read
+                                                        contents: read
+                                                        
+                                                            strategy:
+                                                                  fail-fast: false
+                                                                        matrix:
+                                                                                include:
+                                                                                          # JavaScript/TypeScript explicitly skips compilation
+                                                                                                    - language: javascript-typescript
+                                                                                                                build-mode: none
+                                                                                                                
+                                                                                                                          # C# compiles dynamically via autobuild execution
+                                                                                                                                    - language: csharp
+                                                                                                                                                build-mode: autobuild
+                                                                                                                                                
+                                                                                                                                                    steps:
+                                                                                                                                                        - name: Checkout repository
+                                                                                                                                                              uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+                                                                                                                                                              
+                                                                                                                                                                  # Initializes the CodeQL tools with optional matrix keys
+                                                                                                                                                                      - name: Initialize CodeQL
+                                                                                                                                                                            uses: github/codeql-action/init@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+                                                                                                                                                                                  with:
+                                                                                                                                                                                          languages: ${{ matrix.language }}
+                                                                                                                                                                                                  build-mode: ${{ matrix.build-mode }}
+                                                                                                                                                                                                  
+                                                                                                                                                                                                      # Runs compilation rules dynamically ONLY when explicitly set in matrix properties
+                                                                                                                                                                                                          - name: Autobuild
+                                                                                                                                                                                                                if: matrix.build-mode == 'autobuild'
+                                                                                                                                                                                                                      uses: github/codeql-action/autobuild@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+                                                                                                                                                                                                                      
+                                                                                                                                                                                                                          - name: Perform CodeQL Analysis
+                                                                                                                                                                                                                                uses: github/codeql-action/analyze@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+                                                                                                                                                                                                                                      with:
+                                                                                                                                                                                                                                              category: "/language:${{ matrix.language }}"
+                                                                                                                                                                                                                                              "
