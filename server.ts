@@ -17,7 +17,7 @@ const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 // 1. Enforce HTTP Security Headers (NASA-SA-SEC-POL-2026 / CWE-770)
-// Enables frameguard, CSP, and security headers while permitting preview iframe rendering
+// Enables frameguard, CSP, and security headers with same-origin frame protections
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -28,10 +28,10 @@ app.use(
         fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
         imgSrc: ["'self'", "data:", "blob:", "https:"],
         connectSrc: ["'self'", "https:", "wss:", "ws:"],
-        frameAncestors: ["*"],
+        frameAncestors: ["'self'"],
       },
     },
-    frameguard: false,
+    frameguard: { action: 'sameorigin' },
     crossOriginEmbedderPolicy: false,
   })
 );
@@ -43,6 +43,14 @@ app.use(express.json({ limit: '2mb' }));
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests from this IP, please try again later.' },
+});
+
+const fallbackLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests from this IP, please try again later.' },
@@ -1028,7 +1036,7 @@ if (!isProduction) {
 } else {
   const distPath = path.resolve(__dirname, 'dist');
   app.use(express.static(distPath));
-  app.get('*', (_req: Request, res: Response) => {
+  app.get('*', fallbackLimiter, (_req: Request, res: Response) => {
     res.sendFile(path.resolve(distPath, 'index.html'));
   });
 }
